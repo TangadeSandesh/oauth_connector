@@ -19,7 +19,7 @@ and authorization code issued against it.
 ## Install
 
 ```bash
-bench get-app https://github.com/TangadeSandesh/OAuth-connector
+bench get-app https://github.com/TangadeSandesh/oauth_connector
 bench --site <your-site> install-app oauth_connector
 ```
 
