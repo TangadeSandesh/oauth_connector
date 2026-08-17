@@ -1,7 +1,7 @@
 [project]
 name = "oauth_connector"
 authors = [
-    { name = "Sandesh", email = "cloudshapeddreamsstudio@gmail.com"}
+    { name = "Sandesh", email = "tangadesandesh2001@gmail.com"}
 ]
 description = "Registers a client application as an OAuth client on this Frappe site, and removes it cleanly on uninstall."
 requires-python = ">=3.10"

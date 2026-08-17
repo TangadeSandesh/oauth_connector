@@ -2,7 +2,7 @@ app_name = "oauth_connector"
 app_title = "OAuth Connector"
 app_publisher = "Sandesh"
 app_description = "Registers a client application as an OAuth client on this Frappe site, and removes it cleanly on uninstall."
-app_email = "cloudshapeddreamsstudio@gmail.com"
+app_email = "tangadesandesh@gmail.com"
 app_license = "mit"
 
 # Apps
