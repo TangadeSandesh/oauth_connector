@@ -39,6 +39,42 @@ Defaults target StudioOS in production. Override per site in
 | `oauth_connector_client_name` | `StudioOS` | Application name shown on the consent screen |
 | `oauth_connector_redirect_uris` | `https://app.studioos.com/auth/callback` | String or list of accepted callback URLs |
 | `oauth_connector_scopes` | `all openid` | Scopes granted to the client |
+| `oauth_connector_allowed_roles` | `["Desk User"]` | **Who may sign in.** See the warning below |
+
+### Who may sign in — read this before onboarding staff
+
+Frappe decides whether a user may use an OAuth client by intersecting the
+client's **Allowed Roles** with the user's roles:
+
+```python
+return bool(allowed_roles & set(frappe.get_roles()))
+```
+
+Two things follow, and both are easy to lose hours to:
+
+- **An empty list refuses everyone**, including the owner. The empty
+  intersection is falsy.
+- **The refusal is reported as `Invalid client_id`.** Frappe blames the client,
+  not the user's roles — so you go hunting for a typo in the client id while the
+  real cause is a missing role on the user.
+
+The practical failure is a studio's newly created employee. They exist, they
+have a password, and sign-in refuses them with an error pointing at entirely the
+wrong thing.
+
+The default is `["Desk User"]`, matching Frappe's own, which every System User
+has. Widen it per site if people who are not desk users need to sign in:
+
+```json
+{
+  "oauth_connector_allowed_roles": ["Desk User", "Projects User"]
+}
+```
+
+Then `bench migrate`. The list is **replaced**, not merged, so removing a role
+from the config actually removes it. Roles that do not exist on the site are
+skipped with a warning, and if none of them exist the app refuses to write the
+client at all rather than leaving one that silently rejects every user.
 
 Pointing a local bench at a dev server:
 

@@ -27,4 +27,7 @@ def get_registration():
 		"client_secret": client.client_secret,
 		"redirect_uris": (client.redirect_uris or "").splitlines(),
 		"scopes": client.scopes,
+		# Surfaced because Frappe reports "Invalid client_id" when a user lacks
+		# these roles, which sends anyone debugging it to the wrong place.
+		"allowed_roles": sorted(d.role for d in client.allowed_roles),
 	}
