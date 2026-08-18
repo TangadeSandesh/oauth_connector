@@ -1,20 +1,38 @@
 import frappe
 
-DEFAULT_CLIENT_NAME = "StudioOS"
-DEFAULT_REDIRECT_URIS = ("https://app.studioos.com/auth/callback",)
 DEFAULT_SCOPES = "all openid"
 
 # Frappe's own default. Every System User has it, so this keeps the usual case
 # working, but it is emphatically not "everyone" -- see get_allowed_roles.
 DEFAULT_ALLOWED_ROLES = ("Desk User",)
 
+# The application's name and callback URL have NO defaults, deliberately.
+#
+# They used to default to one particular product and its domain. On a site that
+# installed this app without configuring it, that registered a client named
+# after someone else's application, pointing at someone else's server, on a
+# stranger's data -- and the consent screen would show that name to the site's
+# own users as though they had asked for it.
+#
+# There is no safe value to guess here, so nothing is guessed. An unconfigured
+# install registers nothing at all and says what to set; see `register`.
 
-def get_client_app_name() -> str:
-	"""Name shown to the user on the consent screen.
+# Where the created client's id is remembered, so it can still be found after
+# the configured app name changes. Looking it up by app_name alone means
+# renaming the application orphans the old client -- leaving exactly the live,
+# unowned credential this app exists to clean up.
+CLIENT_KEY = "oauth_connector_client"
 
-	Override in site_config.json:  "oauth_connector_client_name": "StudioOS"
+
+def get_client_app_name() -> str | None:
+	"""Name shown to the user on the consent screen, or None if unconfigured.
+
+	Required. Set in site_config.json:
+
+	    "oauth_connector_client_name": "Your App Name"
 	"""
-	return frappe.conf.get("oauth_connector_client_name") or DEFAULT_CLIENT_NAME
+	configured = frappe.conf.get("oauth_connector_client_name")
+	return configured.strip() if isinstance(configured, str) and configured.strip() else None
 
 
 def get_scopes() -> str:
@@ -25,7 +43,10 @@ def get_scopes() -> str:
 def get_redirect_uris() -> list[str]:
 	"""Redirect URIs this site will accept back from the client application.
 
-	Override per site in site_config.json, which is how a local bench points at
+	Required, and with no default: this is where the site sends a user's
+	authorization code, so a guessed value sends it to the wrong host.
+
+	Set per site in site_config.json, which is also how a local bench points at
 	a dev server instead of production:
 
 	    "oauth_connector_redirect_uris": ["http://localhost:8787/auth/callback"]
@@ -37,13 +58,12 @@ def get_redirect_uris() -> list[str]:
 	)
 
 	if not configured:
-		return list(DEFAULT_REDIRECT_URIS)
+		return []
 
 	if isinstance(configured, str):
 		configured = [configured]
 
-	uris = [uri.strip() for uri in configured if uri and uri.strip()]
-	return uris or list(DEFAULT_REDIRECT_URIS)
+	return [uri.strip() for uri in configured if uri and uri.strip()]
 
 
 def get_allowed_roles() -> list[str]:
@@ -108,16 +128,54 @@ def resolve_allowed_roles() -> tuple[list[str], list[str]]:
 
 
 def get_client_name() -> str | None:
-	"""Name of this site's OAuth client, which is also its client_id."""
-	return frappe.db.get_value("OAuth Client", {"app_name": get_client_app_name()}, "name")
+	"""Name of this site's OAuth client, which is also its client_id.
+
+	Read from the remembered id first. Falling back to an app_name lookup keeps
+	clients created before that id was recorded findable, and is also what makes
+	renaming the application safe: the rename updates the existing client rather
+	than stranding it and creating a second one.
+	"""
+	remembered = frappe.db.get_default(CLIENT_KEY)
+	if remembered and frappe.db.exists("OAuth Client", remembered):
+		return remembered
+
+	app_name = get_client_app_name()
+	if not app_name:
+		return None
+
+	return frappe.db.get_value("OAuth Client", {"app_name": app_name}, "name")
 
 
-def register() -> str:
+def register() -> str | None:
 	"""Create the OAuth client, or bring an existing one in line with site config.
 
 	Idempotent, so it is safe to run on both install and migrate.
+
+	Returns None when the site has not been configured yet. That is deliberately
+	not an error: on the Marketplace route people install first and configure
+	afterwards, and an install that hard-fails would look like a broken app.
+	Nothing is registered until there is something real to register.
 	"""
+	app_name = get_client_app_name()
 	uris = get_redirect_uris()
+
+	if not app_name or not uris:
+		missing = []
+		if not app_name:
+			missing.append('"oauth_connector_client_name": "Your App Name"')
+		if not uris:
+			missing.append(
+				'"oauth_connector_redirect_uris": ["https://yourapp.com/auth/callback"]'
+			)
+		print(
+			"[oauth-connector] not configured yet, so no OAuth client was created.\n"
+			"[oauth-connector] Add to this site's config:\n"
+			+ "".join(f"[oauth-connector]     {line}\n" for line in missing)
+			+ "[oauth-connector] then run `bench --site <site> migrate` "
+			"(or trigger a migrate from the Frappe Cloud dashboard)."
+		)
+		return None
+
 	joined = "\n".join(uris)
 	scopes = get_scopes()
 	roles, missing_roles = resolve_allowed_roles()
@@ -144,30 +202,38 @@ def register() -> str:
 		client = frappe.get_doc("OAuth Client", name)
 		current_roles = sorted(d.role for d in client.allowed_roles)
 		changed = (
-			client.redirect_uris != joined
+			client.app_name != app_name
+			or client.redirect_uris != joined
 			or client.default_redirect_uri != uris[0]
 			or client.scopes != scopes
 			or current_roles != sorted(roles)
 		)
 		if changed:
+			# Renaming the application renames this client rather than leaving
+			# the old one behind. A second, unowned client would still grant
+			# access to the site's data.
+			client.app_name = app_name
 			client.redirect_uris = joined
 			client.default_redirect_uri = uris[0]
 			client.scopes = scopes
 			set_allowed_roles(client, roles)
 			client.save(ignore_permissions=True)
+			frappe.db.set_default(CLIENT_KEY, client.name)
 			frappe.db.commit()
 			print(
 				f"[oauth-connector] configuration updated, client_id={client.client_id}, "
 				f"allowed_roles={', '.join(roles)}"
 			)
 		else:
+			frappe.db.set_default(CLIENT_KEY, client.name)
+			frappe.db.commit()
 			print(f"[oauth-connector] already registered, client_id={client.client_id}")
 		return client.name
 
 	client = frappe.get_doc(
 		{
 			"doctype": "OAuth Client",
-			"app_name": get_client_app_name(),
+			"app_name": app_name,
 			"scopes": scopes,
 			"redirect_uris": joined,
 			"default_redirect_uri": uris[0],
@@ -178,6 +244,7 @@ def register() -> str:
 	)
 	set_allowed_roles(client, roles)
 	client.insert(ignore_permissions=True)
+	frappe.db.set_default(CLIENT_KEY, client.name)
 	frappe.db.commit()
 
 	print(
@@ -218,6 +285,7 @@ def deregister() -> None:
 			frappe.delete_doc(doctype, row, force=True, ignore_permissions=True)
 
 	frappe.delete_doc("OAuth Client", name, force=True, ignore_permissions=True)
+	frappe.db.set_default(CLIENT_KEY, None)
 	frappe.db.commit()
 
 	print(f"[oauth-connector] removed OAuth client {name} and its tokens")

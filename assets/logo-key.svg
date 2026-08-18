@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="t">
+  <title id="t">OAuth Connector</title>
+  <g fill="#2490EF">
+    <path fill-rule="evenodd" d="M56 256a104 104 0 1 0 208 0a104 104 0 1 0-208 0Z M114 256a46 46 0 1 0 92 0a46 46 0 1 0-92 0Z"/>
+    <rect x="236" y="232" width="222" height="48" rx="24"/>
+    <rect x="340" y="248" width="38" height="98" rx="14"/>
+    <rect x="406" y="248" width="38" height="98" rx="14"/>
+  </g>
+</svg>

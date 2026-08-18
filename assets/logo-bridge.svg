@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="t">
+  <title id="t">OAuth Connector</title>
+  <!-- Two rings joined by a keyed bar: the rings are the two systems, the bar
+       is the connection, the teeth make it a credential. The bar stops inside
+       each ring's wall - running it through cuts the holes into crescents. -->
+  <rect x="180" y="234" width="152" height="44" rx="22" fill="#2490EF"/>
+  <rect x="220" y="250" width="34" height="90" rx="12" fill="#2490EF"/>
+  <rect x="268" y="250" width="34" height="90" rx="12" fill="#2490EF"/>
+  <path fill="#2490EF" fill-rule="evenodd" d="M30 256a82 82 0 1 0 164 0a82 82 0 1 0-164 0Z M74 256a38 38 0 1 0 76 0a38 38 0 1 0-76 0Z"/>
+  <path fill="#0B1F35" fill-rule="evenodd" d="M318 256a82 82 0 1 0 164 0a82 82 0 1 0-164 0Z M362 256a38 38 0 1 0 76 0a38 38 0 1 0-76 0Z"/>
+</svg>

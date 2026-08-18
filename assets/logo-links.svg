@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="t">
+  <title id="t">OAuth Connector</title>
+  <defs><clipPath id="upperCrossing"><rect x="190" y="104" width="132" height="140"/></clipPath></defs>
+  <circle cx="316" cy="256" r="96" fill="none" stroke="#0B1F35" stroke-width="44"/>
+  <circle cx="196" cy="256" r="96" fill="none" stroke="#2490EF" stroke-width="44"/>
+  <g clip-path="url(#upperCrossing)"><circle cx="316" cy="256" r="96" fill="none" stroke="#0B1F35" stroke-width="44"/></g>
+</svg>

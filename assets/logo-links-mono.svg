@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none" role="img" aria-labelledby="t">
+  <title id="t">OAuth Connector</title>
+  <defs>
+    <mask id="gapAtTop"><rect width="512" height="512" fill="#fff"/><circle cx="256" cy="181" r="36" fill="#000"/></mask>
+    <mask id="gapAtBottom"><rect width="512" height="512" fill="#fff"/><circle cx="256" cy="331" r="36" fill="#000"/></mask>
+  </defs>
+  <circle cx="196" cy="256" r="96" stroke="currentColor" stroke-width="44" mask="url(#gapAtTop)"/>
+  <circle cx="316" cy="256" r="96" stroke="currentColor" stroke-width="44" mask="url(#gapAtBottom)"/>
+</svg>

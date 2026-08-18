@@ -15,7 +15,14 @@ def get_registration():
 
 	name = get_client_name()
 	if not name:
-		frappe.throw(f"No OAuth client is registered for {get_client_app_name()} on this site.")
+		app_name = get_client_app_name()
+		if not app_name:
+			frappe.throw(
+				"This site has not been configured yet. Set "
+				"`oauth_connector_client_name` and `oauth_connector_redirect_uris` "
+				"in the site config, then run a migrate."
+			)
+		frappe.throw(f"No OAuth client is registered for {app_name} on this site.")
 
 	client = frappe.get_doc("OAuth Client", name)
 
